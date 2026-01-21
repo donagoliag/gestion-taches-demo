@@ -57,3 +57,6 @@ temp/
 Dockerfile*
 docker-compose*
 .dockerignore
+
+target/*.jar
+!target/gestiontaches-0.0.1-SNAPSHOT.jar
