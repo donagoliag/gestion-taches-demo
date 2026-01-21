@@ -1,0 +1,3213 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow - Gestion de Tâches</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <style>
+        :root {
+            --mirror-bg: rgba(0, 0, 0, 0.5);
+            --mirror-border: rgba(255, 255, 255, 0.15);
+            --mirror-hover: rgba(255, 255, 255, 0.08);
+            --text-main: #ffffff;
+            --text-dim: rgba(255, 255, 255, 0.8);
+            --priority-urgente: #ff3b30;
+            --priority-haute: #ff9500;
+            --priority-moyenne: #ffcc00;
+            --priority-basse: #34c759;
+            --status-afaire: #8bbff7;
+            --status-encours: #ff9500;
+            --status-terminee: #34c759;
+            --status-enretard: #ff3b30;
+            --modal-danger: #ff3b30;
+            --modal-warning: #ff9500;
+            --modal-success: #34c759;
+            --categorie-travail: #007aff;
+            --categorie-etudes: #5856d6;
+            --categorie-personnel: #ff2d55;
+            --categorie-loisirs: #34c759;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)),
+                        url('image1.jpg') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            color: var(--text-main);
+            display: flex;
+            overflow-x: hidden;
+        }
+
+        .mirror {
+            background: var(--mirror-bg);
+            backdrop-filter: blur(12px) saturate(160%);
+            -webkit-backdrop-filter: blur(12px) saturate(160%);
+            border: 1px solid var(--mirror-border);
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .mirror:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .sidebar {
+            width: 280px;
+            margin: 20px;
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 40px);
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 45px;
+        }
+
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.2rem;
+        }
+
+        .logo-text {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            padding: 16px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--mirror-border);
+        }
+
+        .stat-card h4 {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .nav-links {
+            list-style: none;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 14px 18px;
+            border-radius: 14px;
+            cursor: pointer;
+            color: var(--text-dim);
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .nav-item i {
+            font-size: 16px;
+            width: 20px;
+        }
+
+        .nav-item:hover {
+            background: var(--mirror-hover);
+            color: var(--text-main);
+            transform: translateX(5px);
+        }
+
+        .nav-item.active {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+        }
+
+        .main-wrapper {
+            flex: 1;
+            padding: 40px 40px 40px 0;
+            overflow-y: auto;
+            height: 100vh;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 35px;
+        }
+
+        .page-title h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 4px;
+        }
+
+        .page-title p {
+            color: var(--text-dim);
+            font-size: 15px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            background: var(--mirror-bg);
+            border: 1px solid var(--mirror-border);
+            backdrop-filter: blur(5px);
+            color: white;
+            padding: 12px 22px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-primary {
+            background: white;
+            color: black;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .status-dropdown {
+            position: relative;
+            display: inline-block;
+            z-index: 1000;
+        }
+
+        .status-btn {
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: 1px solid;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .status-btn.afaire {
+            background: rgba(0, 122, 255, 0.15);
+            border-color: var(--status-afaire);
+            color: var(--status-afaire);
+        }
+
+        .status-btn.encours {
+            background: rgba(255, 149, 0, 0.15);
+            border-color: var(--status-encours);
+            color: var(--status-encours);
+        }
+
+        .status-btn.terminee {
+            background: rgba(52, 199, 89, 0.15);
+            border-color: var(--status-terminee);
+            color: var(--status-terminee);
+        }
+
+        .status-btn.enretard {
+            background: rgba(255, 59, 48, 0.15);
+            border-color: var(--status-enretard);
+            color: var(--status-enretard);
+        }
+
+        .status-menu {
+            position: fixed;
+            background: rgba(30, 30, 30, 0.98) !important;
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-radius: 12px;
+            border: 1px solid var(--mirror-border);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            padding: 8px;
+            min-width: 180px;
+            display: none;
+            z-index: 999999;
+        }
+
+        .status-menu.show {
+            display: block;
+        }
+
+        .status-option {
+            padding: 10px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 4px;
+        }
+
+        .status-option:last-child {
+            margin-bottom: 0;
+        }
+
+        .status-option.afaire {
+            color: var(--status-afaire);
+        }
+
+        .status-option.encours {
+            color: var(--status-encours);
+        }
+
+        .status-option.terminee {
+            color: var(--status-terminee);
+        }
+
+        .status-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .firstsection {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .date-search-section {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .date-input-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--mirror-border);
+        }
+
+        .date-input-group label {
+            font-size: 13px;
+            color: var(--text-dim);
+            font-weight: 600;
+        }
+
+        .date-input-group input[type="date"] {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--mirror-border);
+            border-radius: 8px;
+            padding: 6px 10px;
+            color: var(--text-main);
+            font-size: 13px;
+        }
+
+        .sort-section {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 6px;
+            border-radius: 12px;
+            border: 1px solid var(--mirror-border);
+        }
+
+        .filters-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 6px;
+            border-radius: 12px;
+            border: 1px solid var(--mirror-border);
+        }
+
+        .filter-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn:hover {
+            color: var(--text-main);
+        }
+
+        .filter-btn.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+        }
+
+        .search-box {
+            flex: 1;
+            max-width: 400px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 16px 12px 44px;
+            border-radius: 12px;
+            border: 1px solid var(--mirror-border);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-dim);
+        }
+
+        .search-input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-dim);
+        }
+
+        .tasks-container {
+            display: grid;
+            gap: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .task-card {
+            position: relative;
+            overflow: visible !important;
+        }
+
+        .task-header {
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .task-main {
+            flex: 1;
+        }
+
+        .task-title-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .task-checkbox {
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .task-checkbox:hover {
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+
+        .task-checkbox.checked {
+            background: var(--status-terminee);
+            border-color: var(--status-terminee);
+        }
+
+        .task-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .task-title.completed {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+
+        .task-description {
+            color: var(--text-dim);
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .task-meta {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+
+        .task-meta span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: 1px solid var(--mirror-border);
+            background: rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            color: var(--text-main);
+        }
+
+        .btn-icon:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .btn-icon:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .btn-icon:disabled:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: none;
+        }
+
+        .btn-delete {
+            background: rgba(255, 59, 48, 0.1);
+            border-color: rgba(255, 59, 48, 0.2);
+            color: #ff6b6b;
+        }
+
+        .btn-delete:hover {
+            background: rgba(255, 59, 48, 0.2);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-priority {
+            border: 1px solid;
+        }
+
+        .badge-priority.urgente {
+            background: rgba(255, 59, 48, 0.15);
+            border-color: var(--priority-urgente);
+            color: var(--priority-urgente);
+        }
+
+        .badge-priority.haute {
+            background: rgba(255, 149, 0, 0.15);
+            border-color: var(--priority-haute);
+            color: var(--priority-haute);
+        }
+
+        .badge-priority.moyenne {
+            background: rgba(255, 204, 0, 0.15);
+            border-color: var(--priority-moyenne);
+            color: var(--priority-moyenne);
+        }
+
+        .badge-priority.basse {
+            background: rgba(52, 199, 89, 0.15);
+            border-color: var(--priority-basse);
+            color: var(--priority-basse);
+        }
+
+        .badge-status {
+            border: 1px solid;
+        }
+
+        .badge-status.afaire {
+            background: rgba(0, 122, 255, 0.15);
+            border-color: var(--status-afaire);
+            color: var(--status-afaire);
+        }
+
+        .badge-status.encours {
+            background: rgba(255, 149, 0, 0.15);
+            border-color: var(--status-encours);
+            color: var(--status-encours);
+        }
+
+        .badge-status.terminee {
+            background: rgba(52, 199, 89, 0.15);
+            border-color: var(--status-terminee);
+            color: var(--status-terminee);
+        }
+
+        .badge-status.enretard {
+            background: rgba(255, 59, 48, 0.15);
+            border-color: var(--status-enretard);
+            color: var(--status-enretard);
+        }
+
+        .badge-alert {
+            background: rgba(255, 59, 48, 0.2);
+            color: #ff3b30;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .badge-categorie {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .badge-categorie.travail {
+            background: rgba(0, 122, 255, 0.15);
+            border-color: var(--categorie-travail);
+            color: var(--categorie-travail);
+        }
+
+        .badge-categorie.etudes {
+            background: rgba(88, 86, 214, 0.15);
+            border-color: var(--categorie-etudes);
+            color: var(--categorie-etudes);
+        }
+
+        .badge-categorie.personnel {
+            background: rgba(255, 45, 85, 0.15);
+            border-color: var(--categorie-personnel);
+            color: var(--categorie-personnel);
+        }
+
+        .badge-categorie.loisirs {
+            background: rgba(52, 199, 89, 0.15);
+            border-color: var(--categorie-loisirs);
+            color: var(--categorie-loisirs);
+        }
+
+        .subtasks-section {
+            padding: 0 24px 20px;
+            border-top: 1px solid var(--mirror-border);
+            display: none;
+        }
+
+        .subtasks-section.show {
+            display: block;
+        }
+
+        .subtasks-header {
+            padding: 16px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .subtasks-header h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-dim);
+        }
+
+        .subtask-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .subtask-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .subtask-content {
+            flex: 1;
+        }
+
+        .subtask-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .subtask-description {
+            font-size: 13px;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+        }
+
+        .subtask-meta {
+            display: flex;
+            gap: 10px;
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        .toggle-subtasks-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--mirror-border);
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            color: var(--text-dim);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-subtasks-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+        }
+
+        .toggle-subtasks-btn i {
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-subtasks-btn.expanded i {
+            transform: rotate(180deg);
+        }
+
+        /* Modals principaux */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 20000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid var(--mirror-border);
+            width: 90%;
+            max-width: 700px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--mirror-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .btn-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1px solid var(--mirror-border);
+            background: rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            color: var(--text-main);
+        }
+
+        .btn-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        .form-input,
+        .form-textarea,
+        .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--mirror-border);
+            background: rgba(255, 255, 255, 0.05);
+            font-size: 14px;
+            transition: all 0.2s ease;
+            color: var(--text-main);
+            font-family: inherit;
+        }
+
+        .form-select option {
+            background: rgba(20, 20, 20, 0.95);
+            color: var(--text-main);
+            padding: 10px;
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-input::placeholder,
+        .form-textarea::placeholder {
+            color: var(--text-dim);
+        }
+
+        .form-input:focus,
+        .form-textarea:focus,
+        .form-select:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .modal-footer {
+            padding: 24px;
+            border-top: 1px solid var(--mirror-border);
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        /* Modal de confirmation personnalisé */
+        .confirmation-modal {
+            background: rgba(0, 0, 0, 0.7) !important;
+            backdrop-filter: blur(25px) saturate(200%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 24px;
+            width: 90%;
+            max-width: 450px;
+            overflow: hidden;
+            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.8);
+            animation: modalAppear 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes modalAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .confirmation-header {
+            padding: 28px 30px 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .confirmation-header.danger {
+            background: linear-gradient(135deg, rgba(255, 59, 48, 0.15), rgba(255, 59, 48, 0.05));
+            border-bottom: 1px solid rgba(255, 59, 48, 0.3);
+        }
+
+        .confirmation-header.warning {
+            background: linear-gradient(135deg, rgba(255, 149, 0, 0.15), rgba(255, 149, 0, 0.05));
+            border-bottom: 1px solid rgba(255, 149, 0, 0.3);
+        }
+
+        .confirmation-header.success {
+            background: linear-gradient(135deg, rgba(52, 199, 89, 0.15), rgba(52, 199, 89, 0.05));
+            border-bottom: 1px solid rgba(52, 199, 89, 0.3);
+        }
+
+        .confirmation-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+        }
+
+        .confirmation-icon.danger {
+            background: rgba(255, 59, 48, 0.2);
+            border: 2px solid rgba(255, 59, 48, 0.4);
+            color: var(--modal-danger);
+        }
+
+        .confirmation-icon.warning {
+            background: rgba(255, 149, 0, 0.2);
+            border: 2px solid rgba(255, 149, 0, 0.4);
+            color: var(--modal-warning);
+        }
+
+        .confirmation-icon.success {
+            background: rgba(52, 199, 89, 0.2);
+            border: 2px solid rgba(52, 199, 89, 0.4);
+            color: var(--modal-success);
+        }
+
+        .confirmation-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .confirmation-message {
+            color: var(--text-dim);
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .confirmation-body {
+            padding: 30px;
+        }
+
+        .confirmation-footer {
+            padding: 20px 30px 30px;
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .confirmation-btn {
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            min-width: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .confirmation-btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .confirmation-btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .confirmation-btn-primary {
+            background: white;
+            color: black;
+            font-weight: 700;
+        }
+
+        .confirmation-btn-primary:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateY(-1px);
+        }
+
+        .confirmation-btn-danger {
+            background: var(--modal-danger);
+            color: white;
+            font-weight: 700;
+            border: 1px solid rgba(255, 59, 48, 0.5);
+        }
+
+        .confirmation-btn-danger:hover {
+            background: #ff2d22;
+            transform: translateY(-1px);
+        }
+
+        .confirmation-btn-success {
+            background: var(--modal-success);
+            color: white;
+            font-weight: 700;
+            border: 1px solid rgba(52, 199, 89, 0.5);
+        }
+
+        .confirmation-btn-success:hover {
+            background: #2da44e;
+            transform: translateY(-1px);
+        }
+
+        .confirmation-details {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 20px;
+        }
+
+        .confirmation-details h4 {
+            font-size: 14px;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .confirmation-details ul {
+            list-style: none;
+            margin-left: 10px;
+        }
+
+        .confirmation-details li {
+            color: var(--text-dim);
+            font-size: 13px;
+            margin-bottom: 5px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .confirmation-details li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--text-main);
+        }
+
+        /* Toast notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+            border-radius: 12px;
+            border: 1px solid var(--mirror-border);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 30000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-color: var(--status-terminee);
+        }
+
+        .toast.error {
+            border-color: var(--status-enretard);
+        }
+
+        .toast-icon {
+            font-size: 20px;
+        }
+
+        .toast.success .toast-icon {
+            color: var(--status-terminee);
+        }
+
+        .toast.error .toast-icon {
+            color: var(--status-enretard);
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-dim);
+        }
+
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .empty-state h3 {
+            font-size: 20px;
+            margin-bottom: 12px;
+            color: var(--text-main);
+        }
+
+        .empty-state p {
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+
+        /* Messages d'avertissement dans les modals */
+        .warning-message {
+            background: rgba(255, 149, 0, 0.1);
+            border: 1px solid rgba(255, 149, 0, 0.3);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #ff9500;
+            font-size: 13px;
+        }
+
+        .rules-info {
+            background: rgba(0, 122, 255, 0.1);
+            border: 1px solid rgba(0, 122, 255, 0.3);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            color: var(--status-afaire);
+            font-size: 13px;
+        }
+
+        .rules-info h5 {
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        /* Messages d'erreur et vérification d'unicité */
+        .duplicate-error {
+            background: rgba(255, 59, 48, 0.1);
+            border: 1px solid rgba(255, 59, 48, 0.3);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #ff3b30;
+            font-size: 13px;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .title-availability {
+            font-size: 12px;
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .title-available {
+            color: #34c759;
+        }
+
+        .title-unavailable {
+            color: #ff3b30;
+        }
+
+        .title-checking {
+            color: #ff9500;
+        }
+
+        .unique-title-rule {
+            background: rgba(255, 204, 0, 0.1);
+            border: 1px solid rgba(255, 204, 0, 0.3);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            color: #ffcc00;
+            font-size: 13px;
+        }
+
+        .unique-title-rule h5 {
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: calc(100% - 40px);
+                height: auto;
+                margin: 20px 20px 0;
+                padding: 20px;
+            }
+
+            .main-wrapper {
+                padding: 20px;
+                height: auto;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .firstsection {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .filters-bar {
+                flex-direction: column;
+            }
+
+            .search-box {
+                max-width: 100%;
+            }
+
+            .task-header {
+                flex-direction: column;
+            }
+
+            .task-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            .confirmation-footer {
+                flex-direction: column;
+            }
+
+            .confirmation-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+<aside class="sidebar mirror">
+    <div class="logo-area">
+        <div class="logo-icon">TF</div>
+        <h2 class="logo-text">TaskFlow</h2>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h4>Total</h4>
+            <div class="value" id="statTotal">0</div>
+        </div>
+        <div class="stat-card">
+            <h4>En cours</h4>
+            <div class="value" id="statEnCours">0</div>
+        </div>
+        <div class="stat-card">
+            <h4>Terminées</h4>
+            <div class="value" id="statTerminees">0</div>
+        </div>
+        <div class="stat-card">
+            <h4>En retard</h4>
+            <div class="value" id="statEnRetard">0</div>
+        </div>
+    </div>
+
+    <nav class="nav-links">
+        <div class="nav-item active" data-filter="all">
+            <i class="fas fa-list"></i>
+            <span>Toutes les tâches</span>
+        </div>
+        <div class="nav-item" data-filter="AFaire">
+            <i class="fas fa-circle"></i>
+            <span>À faire</span>
+        </div>
+        <div class="nav-item" data-filter="EnCours">
+            <i class="fas fa-spinner"></i>
+            <span>En cours</span>
+        </div>
+        <div class="nav-item" data-filter="Terminee">
+            <i class="fas fa-check-circle"></i>
+            <span>Terminées</span>
+        </div>
+        <div class="nav-item" data-filter="EnRetard">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>En retard</span>
+        </div>
+    </nav>
+</aside>
+
+<main class="main-wrapper">
+    <header class="header">
+        <div class="page-title">
+            <h1>Mes Tâches</h1>
+            <p>Gérez vos tâches sans prises de tête</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-primary" id="btnAddTask">
+                <i class="fas fa-plus"></i>
+                Nouvelle tâche
+            </button>
+        </div>
+    </header>
+
+    <div class="firstsection">
+        <div class="date-search-section">
+            <div class="date-input-group mirror">
+                <label><i class="fas fa-calendar-alt"></i> Du:</label>
+                <input type="date" id="dateFrom" class="date-input">
+            </div>
+            <div class="date-input-group mirror">
+                <label>Au:</label>
+                <input type="date" id="dateTo" class="date-input">
+            </div>
+            <button class="btn" id="clearDateFilter">
+                <i class="fas fa-times"></i> Effacer
+            </button>
+        </div>
+
+        <div class="sort-section mirror">
+            <i class="fas fa-sort"></i>
+            <button class="filter-btn active" data-sort="none">Par défaut</button>
+            <button class="filter-btn" data-sort="deadline-asc">Échéance ↑</button>
+            <button class="filter-btn" data-sort="deadline-desc">Échéance ↓</button>
+            <button class="filter-btn" data-sort="modified-desc">Modif. récente</button>
+            <button class="filter-btn" data-sort="modified-asc">Modif. ancienne</button>
+        </div>
+    </div>
+
+    <div class="filters-bar">
+        <div class="filter-group mirror">
+            <button class="filter-btn active" data-priority="all">Toutes</button>
+            <button class="filter-btn" data-priority="Urgente">Urgente</button>
+            <button class="filter-btn" data-priority="Haute">Haute</button>
+            <button class="filter-btn" data-priority="Moyenne">Moyenne</button>
+            <button class="filter-btn" data-priority="Basse">Basse</button>
+        </div>
+
+        <div class="filter-group mirror">
+            <button class="filter-btn active" data-categorie="all">Toutes</button>
+            <button class="filter-btn" data-categorie="Travail">Travail</button>
+            <button class="filter-btn" data-categorie="Etudes">Études</button>
+            <button class="filter-btn" data-categorie="Personnel">Personnel</button>
+            <button class="filter-btn" data-categorie="Loisirs">Loisirs</button>
+        </div>
+
+        <div class="search-box">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="search-input mirror" id="searchInput" placeholder="Rechercher une tâche...">
+        </div>
+    </div>
+
+    <div class="tasks-container" id="tasksList"></div>
+</main>
+
+<!-- Modals principaux -->
+<div class="modal" id="modalTask">
+    <div class="modal-content mirror">
+        <div class="modal-header">
+            <h2 id="modalTaskTitle">Nouvelle tâche</h2>
+            <button class="btn-close" id="closeModalTask">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="unique-title-rule" id="uniqueTitleInfo">
+                <h5><i class="fas fa-exclamation-triangle"></i> Règle d'unicité</h5>
+                <p>Tous les titres de tâches doivent être uniques (insensible à la casse).<br>
+                    Le système vérifiera automatiquement lors de l'enregistrement.</p>
+            </div>
+
+            <div class="duplicate-error" id="duplicateTitleError" style="display: none;">
+                <i class="fas fa-exclamation-circle"></i>
+                <div>
+                    <strong>Titre déjà utilisé !</strong>
+                    <span id="duplicateErrorMessage">Une tâche avec ce titre existe déjà.</span>
+                </div>
+            </div>
+
+            <form id="formTask">
+                <div class="form-group">
+                    <label>Titre *</label>
+                    <input type="text" class="form-input" id="taskTitre"
+                           placeholder="Ex: Finaliser le rapport" required
+                           oninput="checkTitleAvailability()">
+                    <div class="title-availability" id="titleAvailability"></div>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea class="form-textarea" id="taskDescription" placeholder="Ajoutez une description..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Date et heure d'échéance</label>
+                    <input type="datetime-local" class="form-input" id="taskDeadline">
+                </div>
+                <div class="form-group">
+                    <label>Catégorie</label>
+                    <select class="form-select" id="taskCategorie">
+                        <option value="">Aucune</option>
+                        <option value="Travail">Travail</option>
+                        <option value="Etudes">Études</option>
+                        <option value="Personnel">Personnel</option>
+                        <option value="Loisirs">Loisirs</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Priorité</label>
+                    <select class="form-select" id="taskPriorite">
+                        <option value="">Auto (basée sur deadline)</option>
+                        <option value="Urgente">Urgente</option>
+                        <option value="Haute">Haute</option>
+                        <option value="Moyenne">Moyenne</option>
+                        <option value="Basse">Basse</option>
+                    </select>
+                </div>
+                <div class="form-group" id="statutGroup" style="display: none;">
+                    <label>Statut</label>
+                    <select class="form-select" id="taskStatut">
+                        <option value="AFaire">À faire</option>
+                        <option value="EnCours">En cours</option>
+                        <option value="Terminee">Terminée</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" id="cancelModalTask">Annuler</button>
+            <button class="btn btn-primary" id="saveTask" disabled>Enregistrer</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="modalSubtask">
+    <div class="modal-content mirror">
+        <div class="modal-header">
+            <h2>Ajouter une sous-tâche</h2>
+            <button class="btn-close" id="closeModalSubtask">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="rules-info">
+                <h5><i class="fas fa-info-circle"></i> Règles hiérarchiques actives</h5>
+                <p>• Si la tâche parent est terminée, toutes ses sous-tâches sont automatiquement terminées<br>
+                    • Une sous-tâche sans deadline prend automatiquement celle de son parent<br>
+                    • Les sous-tâches héritent de la catégorie et priorité du parent<br>
+                    • La suppression du parent supprime automatiquement toutes ses sous-tâches</p>
+            </div>
+
+            <div class="unique-title-rule">
+                <h5><i class="fas fa-exclamation-triangle"></i> Règle d'unicité des titres</h5>
+                <p>Le titre doit être unique parmi TOUTES les tâches (y compris les sous-tâches).<br>
+                    Le système vérifiera automatiquement lors de l'enregistrement.</p>
+            </div>
+
+            <div class="duplicate-error" id="subtaskDuplicateError" style="display: none;">
+                <i class="fas fa-exclamation-circle"></i>
+                <div>
+                    <strong>Titre déjà utilisé !</strong>
+                    <span id="subtaskDuplicateMessage">Une tâche avec ce titre existe déjà.</span>
+                </div>
+            </div>
+
+            <div id="subtaskWarning"></div>
+            <form id="formSubtask">
+                <div class="form-group">
+                    <label>Titre *</label>
+                    <input type="text" class="form-input" id="subtaskTitre"
+                           placeholder="Ex: Relire le document" required
+                           oninput="checkSubtaskTitleAvailability()">
+                    <div class="title-availability" id="subtaskTitleAvailability"></div>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea class="form-textarea" id="subtaskDescription" placeholder="Description optionnelle..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Échéance (optionnelle - hérite du parent si vide)</label>
+                    <input type="datetime-local" class="form-input" id="subtaskDeadline">
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" id="cancelModalSubtask">Annuler</button>
+            <button class="btn btn-primary" id="saveSubtask" disabled>Ajouter</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation universel -->
+<div class="modal" id="confirmationModal">
+    <div class="confirmation-modal mirror">
+        <div class="confirmation-header" id="confirmationHeader">
+            <div class="confirmation-icon" id="confirmationIcon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3 class="confirmation-title" id="confirmationTitle">Confirmation requise</h3>
+            <p class="confirmation-message" id="confirmationMessage">Êtes-vous sûr de vouloir continuer ?</p>
+        </div>
+        <div class="confirmation-body">
+            <div id="confirmationDetails"></div>
+        </div>
+        <div class="confirmation-footer">
+            <button class="confirmation-btn confirmation-btn-secondary" id="confirmCancel">
+                <i class="fas fa-times"></i> Annuler
+            </button>
+            <button class="confirmation-btn" id="confirmAction">
+                <i class="fas fa-check"></i> Confirmer
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast">
+    <i class="toast-icon fas fa-check-circle"></i>
+    <span id="toastMessage">Message</span>
+</div>
+
+<script>
+    const API_URL = 'http://localhost:8080/api/tasks';
+
+    let tasks = [];
+    let subtasksMap = {};
+    let currentFilter = { statut: 'all', priorite: 'all', categorie: 'all', search: '', dateFrom: '', dateTo: '' };
+    let currentSort = 'none';
+    let editingTaskId = null;
+    let currentTaskForSubtask = null;
+    let currentParentTask = null;
+
+    // Variables pour la vérification d'unicité
+    let isTitleAvailable = false;
+    let isSubtaskTitleAvailable = false;
+    let titleCheckTimeout = null;
+    let subtaskTitleCheckTimeout = null;
+
+    // Variables pour les confirmations
+    let pendingConfirmAction = null;
+    let pendingConfirmData = null;
+
+    // Stockage local pour conserver les statuts
+    const STATUS_STORAGE_KEY = 'taskflow_statuses';
+
+    $(document).ready(function() {
+        loadTasks();
+        setupEventListeners();
+        setupConfirmationModal();
+    });
+
+    function extractId(iri) {
+        if (!iri) return null;
+        const match = iri.match(/task_(.+)$/);
+        return match ? match[1] : null;
+    }
+
+    // Fonction pour extraire le label d'une URI
+    function extractLabelFromUri(uri) {
+        if (!uri) return 'Aucune';
+        if (uri.includes('#')) {
+            const label = uri.substring(uri.lastIndexOf('#') + 1);
+            return label || 'Aucune';
+        }
+        return uri || 'Aucune';
+    }
+
+    // Fonction pour obtenir l'URI complète à partir d'un label
+    function getUriFromLabel(label, type) {
+        if (!label) return null;
+        const base = 'http://www.example.org/ontologie/gestion-taches#';
+        return base + label;
+    }
+
+    // Charger les statuts sauvegardés depuis localStorage
+    function loadSavedStatuses() {
+        const saved = localStorage.getItem(STATUS_STORAGE_KEY);
+        return saved ? JSON.parse(saved) : {};
+    }
+
+    // Sauvegarder un statut dans localStorage
+    function saveStatus(taskId, status) {
+        const statuses = loadSavedStatuses();
+        statuses[taskId] = status;
+        localStorage.setItem(STATUS_STORAGE_KEY, JSON.stringify(statuses));
+    }
+
+    // Obtenir le statut sauvegardé pour une tâche
+    function getSavedStatus(taskId) {
+        const statuses = loadSavedStatuses();
+        return statuses[taskId] || null;
+    }
+
+    // Mettre à jour les tâches avec les statuts sauvegardés
+    function applySavedStatuses(tasks) {
+        const savedStatuses = loadSavedStatuses();
+
+        return tasks.map(task => {
+            const taskId = extractId(task.id);
+            if (savedStatuses[taskId]) {
+                return {
+                    ...task,
+                    statutLabel: savedStatuses[taskId],
+                    estTerminee: savedStatuses[taskId] === 'Terminee'
+                };
+            }
+            return task;
+        });
+    }
+
+    // Normaliser les données de tâche
+    function normalizeTaskData(task) {
+        // Extraire les labels depuis les URIs
+        const statutLabel = extractLabelFromUri(task.statutUri);
+        const prioriteLabel = extractLabelFromUri(task.prioriteUri);
+        const categorieLabel = extractLabelFromUri(task.categorieUri);
+
+        return {
+            ...task,
+            statutLabel: task.statutLabel || statutLabel,
+            prioriteLabel: task.prioriteLabel || prioriteLabel,
+            categorieLabel: task.categorieLabel || categorieLabel,
+            categorie: task.categorie || categorieLabel // Pour compatibilité
+        };
+    }
+
+    async function loadTasks() {
+        try {
+            const params = new URLSearchParams();
+            if (currentFilter.priorite !== 'all' && currentFilter.priorite !== 'statut') {
+                params.append('priorite', currentFilter.priorite);
+            }
+            if (currentFilter.categorie !== 'all') {
+                params.append('categorie', currentFilter.categorie);
+            }
+            if (currentFilter.search) params.append('q', currentFilter.search);
+
+            const url = params.toString() ? `${API_URL}?${params}` : API_URL;
+            console.log('Chargement des tâches depuis:', url);
+
+            const response = await fetch(url);
+
+            if (!response.ok) throw new Error('Erreur de chargement');
+            let data = await response.json();
+
+            console.log('Données reçues de l\'API:', data);
+
+            // Normaliser les données de toutes les tâches
+            data = data.map(task => normalizeTaskData(task));
+
+            tasks = applySavedStatuses(data);
+            subtasksMap = {};
+
+            // Ensemble pour stocker les URIs de toutes les sous-tâches
+            let allSubtasksUris = new Set();
+
+            // Charger les sous-tâches
+            const subtasksPromises = tasks.map(async (task) => {
+                const taskId = extractId(task.id);
+                if (task.sousTachesUris && task.sousTachesUris.length > 0) {
+                    try {
+                        const subtasks = [];
+                        for (const subtaskUri of task.sousTachesUris) {
+                            const subtaskId = extractId(subtaskUri);
+                            if (subtaskId) {
+                                // Ajouter l'URI à l'ensemble des sous-tâches
+                                allSubtasksUris.add(subtaskUri);
+
+                                const subtaskResponse = await fetch(`${API_URL}/${subtaskId}`);
+                                if (subtaskResponse.ok) {
+                                    let subtask = await subtaskResponse.json();
+                                    subtask = normalizeTaskData(subtask);
+
+                                    const savedSubtaskStatus = getSavedStatus(subtaskId);
+                                    if (savedSubtaskStatus) {
+                                        subtask = {
+                                            ...subtask,
+                                            statutLabel: savedSubtaskStatus,
+                                            estTerminee: savedSubtaskStatus === 'Terminee'
+                                        };
+                                    }
+                                    subtasks.push(subtask);
+                                }
+                            }
+                        }
+                        subtasksMap[taskId] = subtasks;
+                    } catch (err) {
+                        console.error(`Erreur chargement sous-tâches pour ${taskId}:`, err);
+                    }
+                }
+            });
+
+            await Promise.all(subtasksPromises);
+
+            // FILTRE IMPORTANT : Supprimer les sous-tâches de la liste principale
+            tasks = tasks.filter(task => !allSubtasksUris.has(task.id));
+
+            // Filtrer par statut (côté client)
+            if (currentFilter.statut !== 'all') {
+                tasks = tasks.filter(task => {
+                    const taskStatut = task.statutLabel || 'AFaire';
+                    return taskStatut === currentFilter.statut;
+                });
+            }
+
+            // Filtrer par date
+            if (currentFilter.dateFrom || currentFilter.dateTo) {
+                tasks = tasks.filter(task => {
+                    if (!task.deadline) return false;
+                    const taskDate = new Date(task.deadline);
+
+                    if (currentFilter.dateFrom) {
+                        const fromDate = new Date(currentFilter.dateFrom);
+                        if (taskDate < fromDate) return false;
+                    }
+
+                    if (currentFilter.dateTo) {
+                        const toDate = new Date(currentFilter.dateTo);
+                        toDate.setHours(23, 59, 59);
+                        if (taskDate > toDate) return false;
+                    }
+
+                    return true;
+                });
+            }
+
+            sortTasks();
+            renderTasks();
+            updateStats();
+        } catch (error) {
+            showToast('Erreur de connexion à l\'API', 'error');
+            console.error('Erreur de chargement:', error);
+        }
+    }
+
+    function sortTasks() {
+        switch(currentSort) {
+            case 'deadline-asc':
+                tasks.sort((a, b) => {
+                    if (!a.deadline) return 1;
+                    if (!b.deadline) return -1;
+                    return new Date(a.deadline) - new Date(b.deadline);
+                });
+                break;
+            case 'deadline-desc':
+                tasks.sort((a, b) => {
+                    if (!a.deadline) return 1;
+                    if (!b.deadline) return -1;
+                    return new Date(b.deadline) - new Date(a.deadline);
+                });
+                break;
+            case 'modified-desc':
+                tasks.sort((a, b) => {
+                    const aDate = a.dateFin || a.dateCreation || a.deadline;
+                    const bDate = b.dateFin || b.dateCreation || b.deadline;
+                    if (!aDate) return 1;
+                    if (!bDate) return -1;
+                    return new Date(bDate) - new Date(aDate);
+                });
+                break;
+            case 'modified-asc':
+                tasks.sort((a, b) => {
+                    const aDate = a.dateFin || a.dateCreation || a.deadline;
+                    const bDate = b.dateFin || b.dateCreation || b.deadline;
+                    if (!aDate) return 1;
+                    if (!bDate) return -1;
+                    return new Date(aDate) - new Date(bDate);
+                });
+                break;
+        }
+    }
+
+    function renderTasks() {
+        const container = $('#tasksList');
+
+        if (tasks.length === 0) {
+            let message = 'Aucune tâche';
+            if (currentFilter.statut === 'AFaire') {
+                message = 'Aucune tâche à faire';
+            } else if (currentFilter.statut === 'EnCours') {
+                message = 'Aucune tâche en cours';
+            } else if (currentFilter.statut === 'Terminee') {
+                message = 'Aucune tâche terminée';
+            } else if (currentFilter.statut === 'EnRetard') {
+                message = 'Aucune tâche en retard';
+            }
+
+            container.html(`
+                <div class="empty-state mirror">
+                    <i class="fas fa-tasks"></i>
+                    <h3>${message}</h3>
+                    <p>${currentFilter.statut !== 'all' ? 'Essayez de regarder dans "Toutes les tâches"' : 'Commencez par créer votre première tâche'}</p>
+                    ${currentFilter.statut !== 'all' ?
+                        `<button class="btn" onclick="$('.nav-item[data-filter=\"all\"]').click()">
+                            <i class="fas fa-list"></i>
+                            Voir toutes les tâches
+                        </button>` :
+                        `<button class="btn btn-primary" onclick="openAddTaskModal()">
+                            <i class="fas fa-plus"></i>
+                            Créer une tâche
+                        </button>`
+                    }
+                </div>
+            `);
+            return;
+        }
+
+        container.html(tasks.map(task => renderTaskCard(task)).join(''));
+    }
+
+    function renderTaskCard(task) {
+        const taskId = extractId(task.id);
+        const isCompleted = task.estTerminee || false;
+        const subtasks = subtasksMap[taskId] || [];
+        const hasSubtasks = subtasks.length > 0;
+
+        const deadline = task.deadline ? new Date(task.deadline) : null;
+        const deadlineStr = deadline ?
+            `${deadline.toLocaleDateString('fr-FR')} à ${deadline.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}` :
+            'Aucune';
+
+        const now = new Date();
+        const isOverdue = deadline && !isCompleted && deadline < now;
+
+        // Récupérer les labels normalisés
+        const priorite = task.prioriteLabel || 'Moyenne';
+        const statut = task.statutLabel || 'AFaire';
+        const categorie = task.categorieLabel || 'Aucune';
+
+        const statutText = statut === 'AFaire' ? 'À faire' :
+                          statut === 'EnCours' ? 'En cours' :
+                          statut === 'Terminee' ? 'Terminée' :
+                          statut === 'EnRetard' ? 'En retard' : statut;
+        const statutClass = statut.toLowerCase();
+        const categorieClass = categorie.toLowerCase();
+
+        const canAddSubtask = !isCompleted && statut !== 'Terminee';
+
+        const statusHtml = isOverdue ?
+            `<span class="status-btn enretard">
+                <i class="fas fa-exclamation-circle"></i> En retard
+            </span>` :
+            `<div class="status-dropdown">
+                <span class="status-btn ${statutClass}" onclick="event.stopPropagation(); toggleStatusMenu(event, '${taskId}')">
+                    <i class="fas fa-circle"></i> ${statutText}
+                    <i class="fas fa-chevron-down" style="font-size: 10px; margin-left: 4px;"></i>
+                </span>
+            </div>`;
+
+        let subtasksHtml = '';
+        if (hasSubtasks) {
+            const completedSubtasks = subtasks.filter(st => st.estTerminee || st.statutLabel === 'Terminee').length;
+
+            subtasksHtml = `
+                <div class="subtasks-section" id="subtasks-${taskId}">
+                    <div class="subtasks-header">
+                        <h4><i class="fas fa-sitemap"></i> Sous-tâches (${completedSubtasks}/${subtasks.length})</h4>
+                    </div>
+                    ${subtasks.map(subtask => {
+                        const subtaskId = extractId(subtask.id);
+                        const stIsCompleted = subtask.estTerminee || false;
+                        const stDeadline = subtask.deadline ? new Date(subtask.deadline) : null;
+                        const stDeadlineStr = stDeadline ?
+                            `${stDeadline.toLocaleDateString('fr-FR')} ${stDeadline.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}` :
+                            'Héritée du parent';
+
+                        const stStatut = subtask.statutLabel || 'AFaire';
+                        const stPriorite = subtask.prioriteLabel || 'Moyenne';
+                        const stCategorie = subtask.categorieLabel || 'Héritée';
+
+                        const stStatutText = stStatut === 'AFaire' ? 'À faire' :
+                                            stStatut === 'EnCours' ? 'En cours' :
+                                            stStatut === 'Terminee' ? 'Terminée' : stStatut;
+
+                        return `
+                            <div class="subtask-item mirror" style="background: rgba(255,255,255,0.03); border: 1px solid var(--mirror-border);">
+                                <div class="task-checkbox ${stIsCompleted ? 'checked' : ''}" onclick="toggleComplete('${subtaskId}', ${!stIsCompleted})">
+                                    ${stIsCompleted ? '<i class="fas fa-check"></i>' : ''}
+                                </div>
+                                <div class="subtask-content" style="flex: 1;">
+                                    <div class="subtask-title ${stIsCompleted ? 'completed' : ''}" style="font-weight: 600; margin-bottom: 5px;">${subtask.titre}</div>
+                                    ${subtask.description ? `<div class="subtask-description" style="color: var(--text-dim); font-size: 13px; margin-bottom: 8px;">${subtask.description}</div>` : ''}
+                                    <div class="subtask-meta" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                        <span class="badge badge-priority ${stPriorite.toLowerCase()}" style="font-size: 11px;">
+                                            <i class="fas fa-flag"></i> ${stPriorite}
+                                        </span>
+                                        <span class="badge badge-status ${stStatut.toLowerCase()}" style="font-size: 11px;">
+                                            <i class="fas fa-circle"></i> ${stStatutText}
+                                        </span>
+                                        ${stCategorie !== 'Héritée' ? `
+                                            <span class="badge badge-categorie ${stCategorie.toLowerCase()}" style="font-size: 11px;">
+                                                <i class="fas fa-tag"></i> ${stCategorie}
+                                            </span>
+                                        ` : ''}
+                                        <span style="color: var(--text-dim); font-size: 11px; display: flex; align-items: center; gap: 4px;">
+                                            <i class="fas fa-clock"></i> ${stDeadlineStr}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 5px;">
+                                    <button class="btn-icon" onclick="editTask('${subtaskId}')" style="width: 30px; height: 30px; font-size: 12px;" title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn-icon btn-delete" onclick="confirmCascadeDelete('${subtaskId}', false)" style="width: 30px; height: 30px; font-size: 12px;" title="Supprimer">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        return `
+            <div class="task-card mirror" data-task-id="${taskId}">
+                <div class="task-header">
+                    <div class="task-main">
+                        <div class="task-title-row">
+                            <div class="task-checkbox ${isCompleted ? 'checked' : ''}"
+                                 onclick="toggleComplete('${taskId}', ${!isCompleted})">
+                                ${isCompleted ? '<i class="fas fa-check"></i>' : ''}
+                            </div>
+                            <h3 class="task-title ${isCompleted ? 'completed' : ''}">${task.titre}</h3>
+                            ${hasSubtasks ? `
+                                <button class="toggle-subtasks-btn" onclick="toggleSubtasks('${taskId}')">
+                                    <i class="fas fa-chevron-down"></i>
+                                    ${subtasks.length}
+                                </button>
+                            ` : ''}
+                        </div>
+                        ${task.description ? `<p class="task-description">${task.description}</p>` : ''}
+                        <div class="task-meta">
+                            <span class="badge badge-priority ${priorite.toLowerCase()}">
+                                <i class="fas fa-flag"></i> ${priorite}
+                            </span>
+                            ${statusHtml}
+                            <span class="badge badge-categorie ${categorieClass}">
+                                <i class="fas fa-tag"></i> ${categorie}
+                            </span>
+                            ${isOverdue ? `<span class="badge badge-alert"><i class="fas fa-exclamation-triangle"></i> En retard</span>` : ''}
+                            <span><i class="fas fa-calendar"></i> ${deadlineStr}</span>
+                        </div>
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn-icon"
+                                onclick="addSubtask('${taskId}')"
+                                title="${canAddSubtask ? 'Ajouter sous-tâche' : 'Tâche terminée - impossible d\'ajouter des sous-tâches'}"
+                                ${canAddSubtask ? '' : 'disabled'}>
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button class="btn-icon" onclick="editTask('${taskId}')" title="Modifier">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-icon btn-delete" onclick="confirmCascadeDelete('${taskId}', ${hasSubtasks})" title="${hasSubtasks ? 'Supprimer (avec sous-tâches)' : 'Supprimer'}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                ${subtasksHtml}
+            </div>
+        `;
+    }
+
+    function toggleSubtasks(taskId) {
+        const subtasksSection = $(`#subtasks-${taskId}`);
+        const toggleBtn = $(`[data-task-id="${taskId}"] .toggle-subtasks-btn`);
+
+        subtasksSection.toggleClass('show');
+        toggleBtn.toggleClass('expanded');
+    }
+
+    function updateStats() {
+        const allTasks = applySavedStatuses(tasks);
+
+        $('#statTotal').text(allTasks.length);
+        $('#statEnCours').text(allTasks.filter(t => t.statutLabel === 'EnCours').length);
+        $('#statTerminees').text(allTasks.filter(t => t.estTerminee || t.statutLabel === 'Terminee').length);
+
+        const now = new Date();
+        const enRetardCount = allTasks.filter(t => {
+            if (t.estTerminee || t.statutLabel === 'Terminee') return false;
+            if (!t.deadline) return false;
+            return new Date(t.deadline) < now;
+        }).length;
+        $('#statEnRetard').text(enRetardCount);
+    }
+
+    // ==================== MODAL DE CONFIRMATION ====================
+
+    function setupConfirmationModal() {
+        $('#confirmCancel').on('click', function() {
+            $('#confirmationModal').removeClass('show');
+            pendingConfirmAction = null;
+            pendingConfirmData = null;
+        });
+
+        $('#confirmAction').on('click', function() {
+            if (pendingConfirmAction) {
+                pendingConfirmAction(pendingConfirmData);
+            }
+            $('#confirmationModal').removeClass('show');
+            pendingConfirmAction = null;
+            pendingConfirmData = null;
+        });
+    }
+
+    function showConfirmationModal(options) {
+        const {
+            title = 'Confirmation requise',
+            message = 'Êtes-vous sûr de vouloir continuer ?',
+            type = 'warning', // 'warning', 'danger', 'success'
+            details = '',
+            confirmText = 'Confirmer',
+            cancelText = 'Annuler',
+            onConfirm,
+            data = null
+        } = options;
+
+        // Configurer l'en-tête selon le type
+        const header = $('#confirmationHeader');
+        const icon = $('#confirmationIcon');
+
+        header.removeClass('danger warning success');
+        icon.removeClass('danger warning success');
+
+        if (type === 'danger') {
+            header.addClass('danger');
+            icon.addClass('danger');
+            icon.html('<i class="fas fa-exclamation-triangle"></i>');
+            $('#confirmAction').removeClass('confirmation-btn-primary confirmation-btn-success').addClass('confirmation-btn-danger');
+            $('#confirmAction').html(`<i class="fas fa-trash"></i> ${confirmText}`);
+        } else if (type === 'success') {
+            header.addClass('success');
+            icon.addClass('success');
+            icon.html('<i class="fas fa-check-circle"></i>');
+            $('#confirmAction').removeClass('confirmation-btn-primary confirmation-btn-danger').addClass('confirmation-btn-success');
+            $('#confirmAction').html(`<i class="fas fa-check"></i> ${confirmText}`);
+        } else {
+            header.addClass('warning');
+            icon.addClass('warning');
+            icon.html('<i class="fas fa-exclamation-triangle"></i>');
+            $('#confirmAction').removeClass('confirmation-btn-danger confirmation-btn-success').addClass('confirmation-btn-primary');
+            $('#confirmAction').html(`<i class="fas fa-check"></i> ${confirmText}`);
+        }
+
+        $('#confirmCancel').html(`<i class="fas fa-times"></i> ${cancelText}`);
+        $('#confirmationTitle').text(title);
+        $('#confirmationMessage').text(message);
+
+        const detailsContainer = $('#confirmationDetails');
+        if (details) {
+            detailsContainer.html(details).show();
+        } else {
+            detailsContainer.html('').hide();
+        }
+
+        pendingConfirmAction = onConfirm;
+        pendingConfirmData = data;
+
+        $('#confirmationModal').addClass('show');
+    }
+
+    // ==================== CONFIRMATIONS DE TÂCHES ====================
+
+    async function confirmToggleComplete(taskId, shouldComplete) {
+        try {
+            const taskResponse = await fetch(`${API_URL}/${taskId}`);
+            if (!taskResponse.ok) throw new Error('Tâche non trouvée');
+            const currentTask = await taskResponse.json();
+
+            const hasSubtasks = currentTask.sousTachesUris && currentTask.sousTachesUris.length > 0;
+
+            if (shouldComplete && hasSubtasks) {
+                showConfirmationModal({
+                    title: 'Terminer la tâche ?',
+                    message: 'Cette tâche a des sous-tâches. Toutes les sous-tâches seront automatiquement terminées.',
+                    type: 'warning',
+                    details: `
+                        <div class="confirmation-details">
+                            <h4><i class="fas fa-info-circle"></i> Impact de cette action :</h4>
+                            <ul>
+                                <li>Toutes les sous-tâches seront marquées comme terminées</li>
+                                <li>La tâche parent sera marquée comme terminée</li>
+                                <li>Cette action est réversible</li>
+                            </ul>
+                        </div>
+                    `,
+                    confirmText: 'Terminer tout',
+                    cancelText: 'Annuler',
+                    onConfirm: () => toggleComplete(taskId, shouldComplete),
+                    data: { taskId, shouldComplete }
+                });
+            } else {
+                toggleComplete(taskId, shouldComplete);
+            }
+        } catch (error) {
+            showToast('Erreur lors de la récupération de la tâche', 'error');
+        }
+    }
+
+    function confirmCascadeDelete(taskId, hasSubtasks) {
+        const message = hasSubtasks ?
+            'ATTENTION : Cette tâche a des sous-tâches. La suppression supprimera aussi TOUTES ses sous-tâches, quel que soit leur statut.' :
+            'Supprimer cette tâche ?';
+
+        const details = hasSubtasks ? `
+            <div class="confirmation-details">
+                <h4><i class="fas fa-exclamation-triangle"></i> Cette action supprimera :</h4>
+                <ul>
+                    <li>La tâche sélectionnée</li>
+                    <li>Toutes ses sous-tâches (y compris en cours)</li>
+                    <li>Toutes les dépendances associées</li>
+                </ul>
+                <p style="color: #ff6b6b; font-size: 12px; margin-top: 10px;">
+                    <i class="fas fa-exclamation-circle"></i> Cette action est irréversible !
+                </p>
+            </div>
+        ` : '';
+
+        showConfirmationModal({
+            title: hasSubtasks ? 'Suppression en cascade' : 'Supprimer la tâche ?',
+            message: message,
+            type: 'danger',
+            details: details,
+            confirmText: hasSubtasks ? 'Tout supprimer' : 'Supprimer',
+            cancelText: 'Annuler',
+            onConfirm: () => deleteTask(taskId, hasSubtasks),
+            data: { taskId, hasSubtasks }
+        });
+    }
+
+    // ==================== VÉRIFICATION D'UNICITÉ DES TITRES ====================
+
+    function checkTitleAvailability() {
+        clearTimeout(titleCheckTimeout);
+
+        const title = $('#taskTitre').val().trim();
+        const availabilityDiv = $('#titleAvailability');
+
+        if (!title) {
+            availabilityDiv.html('');
+            $('#saveTask').prop('disabled', true);
+            isTitleAvailable = false;
+            $('#duplicateTitleError').hide();
+            return;
+        }
+
+        availabilityDiv.html(`
+            <span class="title-checking">
+                <i class="fas fa-spinner fa-spin"></i> Vérification en cours...
+            </span>
+        `);
+
+        titleCheckTimeout = setTimeout(async () => {
+            try {
+                const isDuplicate = tasks.some(task =>
+                    task.titre && task.titre.trim().toLowerCase() === title.toLowerCase() &&
+                    (!editingTaskId || extractId(task.id) !== editingTaskId)
+                );
+
+                if (isDuplicate) {
+                    availabilityDiv.html(`
+                        <span class="title-unavailable">
+                            <i class="fas fa-times-circle"></i> Ce titre est déjà utilisé
+                        </span>
+                    `);
+                    $('#saveTask').prop('disabled', true);
+                    isTitleAvailable = false;
+
+                    $('#duplicateErrorMessage').text('Une tâche avec ce titre existe déjà.');
+                    $('#duplicateTitleError').show();
+                } else {
+                    availabilityDiv.html(`
+                        <span class="title-available">
+                            <i class="fas fa-check-circle"></i> Titre disponible
+                        </span>
+                    `);
+                    $('#saveTask').prop('disabled', false);
+                    isTitleAvailable = true;
+                    $('#duplicateTitleError').hide();
+                }
+            } catch (error) {
+                console.error('Erreur lors de la vérification du titre:', error);
+                availabilityDiv.html(`
+                    <span class="title-checking">
+                        <i class="fas fa-exclamation-triangle"></i> Vérification échouée
+                    </span>
+                `);
+                $('#saveTask').prop('disabled', false);
+                isTitleAvailable = true;
+            }
+        }, 500);
+    }
+
+    function checkSubtaskTitleAvailability() {
+        clearTimeout(subtaskTitleCheckTimeout);
+
+        const title = $('#subtaskTitre').val().trim();
+        const availabilityDiv = $('#subtaskTitleAvailability');
+
+        if (!title) {
+            availabilityDiv.html('');
+            $('#saveSubtask').prop('disabled', true);
+            isSubtaskTitleAvailable = false;
+            $('#subtaskDuplicateError').hide();
+            return;
+        }
+
+        availabilityDiv.html(`
+            <span class="title-checking">
+                <i class="fas fa-spinner fa-spin"></i> Vérification en cours...
+            </span>
+        `);
+
+        subtaskTitleCheckTimeout = setTimeout(async () => {
+            try {
+                const isDuplicate = tasks.some(task =>
+                    task.titre && task.titre.trim().toLowerCase() === title.toLowerCase()
+                );
+
+                let subtaskDuplicate = false;
+                for (const taskId in subtasksMap) {
+                    if (subtasksMap[taskId].some(subtask =>
+                        subtask.titre && subtask.titre.trim().toLowerCase() === title.toLowerCase()
+                    )) {
+                        subtaskDuplicate = true;
+                        break;
+                    }
+                }
+
+                if (isDuplicate || subtaskDuplicate) {
+                    availabilityDiv.html(`
+                        <span class="title-unavailable">
+                            <i class="fas fa-times-circle"></i> Ce titre est déjà utilisé
+                        </span>
+                    `);
+                    $('#saveSubtask').prop('disabled', true);
+                    isSubtaskTitleAvailable = false;
+
+                    $('#subtaskDuplicateMessage').text('Une tâche avec ce titre existe déjà.');
+                    $('#subtaskDuplicateError').show();
+                } else {
+                    availabilityDiv.html(`
+                        <span class="title-available">
+                            <i class="fas fa-check-circle"></i> Titre disponible
+                        </span>
+                    `);
+                    $('#saveSubtask').prop('disabled', false);
+                    isSubtaskTitleAvailable = true;
+                    $('#subtaskDuplicateError').hide();
+                }
+            } catch (error) {
+                console.error('Erreur lors de la vérification du titre:', error);
+                availabilityDiv.html(`
+                    <span class="title-checking">
+                        <i class="fas fa-exclamation-triangle"></i> Vérification échouée
+                    </span>
+                `);
+                $('#saveSubtask').prop('disabled', false);
+                isSubtaskTitleAvailable = true;
+            }
+        }, 500);
+    }
+
+    // ==================== GESTION DES ÉVÉNEMENTS ====================
+
+    function setupEventListeners() {
+        $('.nav-item').on('click', function() {
+            $('.nav-item').removeClass('active');
+            $(this).addClass('active');
+            currentFilter.statut = $(this).data('filter') || 'all';
+            loadTasks();
+        });
+
+        $('[data-priority]').on('click', function() {
+            $('[data-priority]').removeClass('active');
+            $(this).addClass('active');
+            currentFilter.priorite = $(this).data('priority');
+            loadTasks();
+        });
+
+        $('[data-categorie]').on('click', function() {
+            $('[data-categorie]').removeClass('active');
+            $(this).addClass('active');
+            currentFilter.categorie = $(this).data('categorie');
+            loadTasks();
+        });
+
+        $('[data-sort]').on('click', function() {
+            $('[data-sort]').removeClass('active');
+            $(this).addClass('active');
+            currentSort = $(this).data('sort');
+            sortTasks();
+            renderTasks();
+        });
+
+        $('#searchInput').on('input', function() {
+            currentFilter.search = $(this).val();
+            loadTasks();
+        });
+
+        $('#dateFrom, #dateTo').on('change', function() {
+            currentFilter.dateFrom = $('#dateFrom').val();
+            currentFilter.dateTo = $('#dateTo').val();
+            loadTasks();
+        });
+
+        $('#clearDateFilter').on('click', function() {
+            $('#dateFrom').val('');
+            $('#dateTo').val('');
+            currentFilter.dateFrom = '';
+            currentFilter.dateTo = '';
+            loadTasks();
+        });
+
+        $('#btnAddTask').on('click', openAddTaskModal);
+        $('#closeModalTask, #cancelModalTask').on('click', () => $('#modalTask').removeClass('show'));
+        $('#closeModalSubtask, #cancelModalSubtask').on('click', () => $('#modalSubtask').removeClass('show'));
+
+        $('#saveTask').on('click', saveTask);
+        $('#saveSubtask').on('click', saveSubtask);
+
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.status-dropdown').length) {
+                $('.status-menu').remove();
+            }
+        });
+    }
+
+    // ==================== GESTION DU STATUT ====================
+
+    function toggleStatusMenu(event, taskId) {
+        event.stopPropagation();
+        event.preventDefault();
+
+        $('.status-menu').remove();
+
+        const button = $(event.target).closest('.status-btn');
+        const buttonRect = button[0].getBoundingClientRect();
+
+        const menuHtml = `
+            <div class="status-menu" id="status-menu-${taskId}">
+                <div class="status-option afaire" onclick="changeStatus('${taskId}', 'AFaire')">
+                    <i class="fas fa-circle"></i> À faire
+                </div>
+                <div class="status-option encours" onclick="changeStatus('${taskId}', 'EnCours')">
+                    <i class="fas fa-spinner"></i> En cours
+                </div>
+                <div class="status-option terminee" onclick="changeStatus('${taskId}', 'Terminee')">
+                    <i class="fas fa-check-circle"></i> Terminée
+                </div>
+            </div>
+        `;
+
+        $('body').append(menuHtml);
+        const menu = $(`#status-menu-${taskId}`);
+
+        const menuWidth = menu.outerWidth();
+        const menuHeight = menu.outerHeight();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        let top = buttonRect.bottom + 5;
+        let left = buttonRect.left;
+
+        if (left + menuWidth > viewportWidth - 10) {
+            left = viewportWidth - menuWidth - 10;
+        }
+
+        if (top + menuHeight > viewportHeight - 10) {
+            top = buttonRect.top - menuHeight - 5;
+        }
+
+        menu.css({
+            top: top + 'px',
+            left: left + 'px',
+            display: 'block'
+        });
+    }
+
+    async function changeStatus(taskId, newStatut) {
+        try {
+            $('.status-menu').remove();
+
+            const taskResponse = await fetch(`${API_URL}/${taskId}`);
+            if (!taskResponse.ok) throw new Error('Tâche non trouvée');
+            const currentTask = await taskResponse.json();
+
+            const hasSubtasks = currentTask.sousTachesUris && currentTask.sousTachesUris.length > 0;
+
+            // Règle : Si la tâche parente est terminée et qu'on la remet en cours,
+            // toutes ses sous-tâches doivent aussi être remises à "À faire"
+            const wasCompleted = currentTask.estTerminee || currentTask.statutLabel === 'Terminee';
+            const isReopening = wasCompleted && (newStatut === 'AFaire' || newStatut === 'EnCours');
+
+            if (isReopening && hasSubtasks) {
+                showConfirmationModal({
+                    title: 'Remettre la tâche en cours ?',
+                    message: 'Cette tâche a des sous-tâches terminées. Toutes les sous-tâches seront automatiquement remises à "À faire".',
+                    type: 'warning',
+                    details: `
+                        <div class="confirmation-details">
+                            <h4><i class="fas fa-info-circle"></i> Impact de cette action :</h4>
+                            <ul>
+                                <li>Toutes les sous-tâches terminées seront remises à "À faire"</li>
+                                <li>Les toggles des sous-tâches seront décochés</li>
+                                <li>Vous pourrez modifier les statuts après</li>
+                            </ul>
+                        </div>
+                    `,
+                    confirmText: 'Tout remettre en cours',
+                    cancelText: 'Annuler',
+                    onConfirm: () => performStatusChange(taskId, newStatut, true),
+                    data: { taskId, newStatut, reopenSubtasks: true }
+                });
+            } else if (newStatut === 'Terminee' && hasSubtasks) {
+                showConfirmationModal({
+                    title: 'Terminer la tâche ?',
+                    message: 'Cette tâche a des sous-tâches. Toutes les sous-tâches seront automatiquement terminées.',
+                    type: 'warning',
+                    details: `
+                        <div class="confirmation-details">
+                            <h4><i class="fas fa-info-circle"></i> Impact de cette action :</h4>
+                            <ul>
+                                <li>Toutes les sous-tâches seront marquées comme terminées</li>
+                                <li>La tâche parent sera marquée comme terminée</li>
+                                <li>Cette action est réversible</li>
+                            </ul>
+                        </div>
+                    `,
+                    confirmText: 'Terminer tout',
+                    cancelText: 'Annuler',
+                    onConfirm: () => performStatusChange(taskId, newStatut),
+                    data: { taskId, newStatut }
+                });
+            } else {
+                performStatusChange(taskId, newStatut);
+            }
+        } catch (error) {
+            showToast(error.message || 'Erreur de mise à jour du statut', 'error');
+        }
+    }
+
+    async function performStatusChange(taskId, newStatut, reopenSubtasks = false) {
+        try {
+            // Convertir le label en URI pour l'API
+            const statutUri = getUriFromLabel(newStatut, 'statut');
+            const shouldComplete = newStatut === 'Terminee';
+
+            const response = await fetch(`${API_URL}/${taskId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    statutUri: statutUri,
+                    estTerminee: shouldComplete
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                if (errorData.error === "Titre dupliqué") {
+                    showToast(errorData.message || 'Ce titre est déjà utilisé par une autre tâche', 'error');
+                    return;
+                }
+                throw new Error(errorData.message || 'Erreur de mise à jour');
+            }
+
+            saveStatus(taskId, newStatut);
+
+            const updatedTask = await response.json();
+            const normalizedTask = normalizeTaskData(updatedTask);
+
+            // Mettre à jour la tâche dans la liste
+            const taskIndex = tasks.findIndex(t => extractId(t.id) === taskId);
+            if (taskIndex !== -1) {
+                tasks[taskIndex] = {
+                    ...tasks[taskIndex],
+                    statutLabel: newStatut,
+                    statutUri: statutUri,
+                    estTerminee: shouldComplete
+                };
+            }
+
+            // Mettre à jour visuellement immédiatement
+            updateTaskVisual(taskId, newStatut, shouldComplete);
+
+            // Règles hiérarchiques
+            const subtasks = subtasksMap[taskId] || [];
+
+            if (shouldComplete) {
+                // Règle : Si la tâche parente est terminée, toutes ses sous-tâches aussi
+                subtasks.forEach(subtask => {
+                    const subtaskId = extractId(subtask.id);
+                    updateTaskVisual(subtaskId, 'Terminee', true);
+                    saveStatus(subtaskId, 'Terminee');
+                });
+            } else if (reopenSubtasks) {
+                // Règle : Si la tâche parente est remise en cours, toutes ses sous-tâches aussi
+                subtasks.forEach(subtask => {
+                    const subtaskId = extractId(subtask.id);
+                    updateTaskVisual(subtaskId, 'AFaire', false);
+                    saveStatus(subtaskId, 'AFaire');
+                });
+
+                // Appeler l'API pour remettre les sous-tâches en cours
+                await Promise.all(subtasks.map(async (subtask) => {
+                    const subtaskId = extractId(subtask.id);
+                    if (subtask.estTerminee || subtask.statutLabel === 'Terminee') {
+                        try {
+                            await fetch(`${API_URL}/${subtaskId}/in-progress`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' }
+                            });
+                        } catch (err) {
+                            console.error(`Erreur lors de la remise en cours de la sous-tâche ${subtaskId}:`, err);
+                        }
+                    }
+                }));
+            }
+
+            let message = 'Statut mis à jour';
+            if (newStatut === 'Terminee') {
+                const taskResponse = await fetch(`${API_URL}/${taskId}`);
+                const currentTask = await taskResponse.json();
+                const hasSubtasks = currentTask.sousTachesUris && currentTask.sousTachesUris.length > 0;
+                message = hasSubtasks ? 'Tâche et sous-tâches terminées' : 'Tâche terminée';
+            } else if (reopenSubtasks) {
+                message = 'Tâche et sous-tâches remises en cours';
+            }
+
+            showToast(message, 'success');
+            updateStats();
+
+            // Recharger pour synchroniser
+            setTimeout(() => {
+                if (currentFilter.statut !== 'all') {
+                    loadTasks();
+                }
+            }, 500);
+
+        } catch (error) {
+            showToast(error.message || 'Erreur de mise à jour du statut', 'error');
+        }
+    }
+
+    // ==================== FONCTIONS POUR MISE À JOUR VISUELLE ====================
+
+    function updateTaskVisual(taskId, newStatut, isCompleted) {
+        const taskCard = $(`[data-task-id="${taskId}"]`);
+        if (!taskCard.length) return;
+
+        const checkbox = taskCard.find('.task-checkbox');
+        const taskTitle = taskCard.find('.task-title');
+        const statusBtn = taskCard.find('.status-btn');
+        const statusSpan = taskCard.find('.badge-status');
+
+        const statutText = newStatut === 'AFaire' ? 'À faire' :
+                          newStatut === 'EnCours' ? 'En cours' :
+                          newStatut === 'Terminee' ? 'Terminée' : newStatut;
+
+        // Mettre à jour le toggle (checkbox)
+        if (isCompleted) {
+            checkbox.addClass('checked').html('<i class="fas fa-check"></i>');
+            taskTitle.addClass('completed');
+        } else {
+            checkbox.removeClass('checked').html('');
+            taskTitle.removeClass('completed');
+        }
+
+        // Mettre à jour le statut dans le dropdown (tâches principales)
+        if (statusBtn.length) {
+            statusBtn.removeClass('afaire encours terminee enretard');
+            statusBtn.addClass(newStatut.toLowerCase());
+
+            const icon = statusBtn.find('i').first();
+            statusBtn.html(icon[0].outerHTML + ' ' + statutText +
+                          ' <i class="fas fa-chevron-down" style="font-size: 10px; margin-left: 4px;"></i>');
+        }
+
+        // Mettre à jour le badge de statut (pour les sous-tâches)
+        if (statusSpan.length) {
+            statusSpan.removeClass('afaire encours terminee enretard');
+            statusSpan.addClass(newStatut.toLowerCase());
+            const icon = statusSpan.find('i').first();
+            const textSpan = icon.next();
+            if (textSpan.length) {
+                textSpan.text(' ' + statutText);
+            }
+        }
+
+        // Mettre à jour le bouton d'ajout de sous-tâche
+        const addSubtaskBtn = taskCard.find('.btn-icon:first');
+        if (newStatut === 'Terminee') {
+            addSubtaskBtn.attr('disabled', true).attr('title', 'Tâche terminée - impossible d\'ajouter des sous-tâches');
+        } else {
+            addSubtaskBtn.removeAttr('disabled').attr('title', 'Ajouter sous-tâche');
+        }
+    }
+
+    // ==================== FONCTION POUR VÉRIFIER ET TERMINER LE PARENT ====================
+    async function checkAndCompleteParentIfAllSubtasksDone(subtaskId) {
+    try {
+        // Trouver le parent de cette sous-tâche
+        for (const parentId in subtasksMap) {
+            const parentSubtasks = subtasksMap[parentId] || [];
+            const parentSubtask = parentSubtasks.find(st => extractId(st.id) === subtaskId);
+
+            if (parentSubtask) {
+                // Vérifier si toutes les sous-tâches du parent sont terminées
+                const allSubtasksCompleted = parentSubtasks.every(st =>
+                    st.estTerminee || st.statutLabel === 'Terminee'
+                );
+
+                if (allSubtasksCompleted) {
+                    // Récupérer le parent pour vérifier son statut actuel
+                    const parentTask = tasks.find(t => extractId(t.id) === parentId);
+
+                    if (parentTask && !parentTask.estTerminee && parentTask.statutLabel !== 'Terminee') {
+                        // Terminer automatiquement le parent
+                        await fetch(`${API_URL}/${parentId}/complete`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ cause: 'AllSubtasksCompleted' })
+                        });
+
+                        // Mettre à jour visuellement le parent
+                        updateTaskVisual(parentId, 'Terminee', true);
+                        saveStatus(parentId, 'Terminee');
+
+                        // Mettre à jour la tâche dans la liste
+                        const parentIndex = tasks.findIndex(t => extractId(t.id) === parentId);
+                        if (parentIndex !== -1) {
+                            tasks[parentIndex] = {
+                                ...tasks[parentIndex],
+                                statutLabel: 'Terminee',
+                                estTerminee: true
+                            };
+                        }
+
+                        showToast('Toutes les sous-tâches sont terminées, la tâche parente est automatiquement terminée', 'success');
+                        updateStats();
+
+                        // Recharger après un délai
+                        setTimeout(() => {
+                            loadTasks();
+                        }, 500);
+                    }
+                }
+                break;
+            }
+        }
+    } catch (error) {
+        console.error('Erreur lors de la vérification du parent:', error);
+    }
+}
+
+    // ==================== CRUD TÂCHES ====================
+
+    function openAddTaskModal() {
+        editingTaskId = null;
+        $('#modalTaskTitle').text('Nouvelle tâche');
+        $('#formTask')[0].reset();
+        $('#statutGroup').hide();
+        $('#duplicateTitleError').hide();
+        $('#titleAvailability').html('');
+        $('#saveTask').prop('disabled', true);
+        isTitleAvailable = false;
+        $('#modalTask').addClass('show');
+
+        setTimeout(() => $('#taskTitre').focus(), 100);
+    }
+
+    async function editTask(taskId) {
+        try {
+            const response = await fetch(`${API_URL}/${taskId}`);
+            if (!response.ok) throw new Error('Tâche non trouvée');
+
+            const task = await response.json();
+            const normalizedTask = normalizeTaskData(task);
+            editingTaskId = taskId;
+
+            $('#modalTaskTitle').text('Modifier la tâche');
+            $('#taskTitre').val(task.titre);
+            $('#taskDescription').val(task.description || '');
+            $('#taskDeadline').val(task.deadline ? task.deadline.slice(0, 16) : '');
+            $('#taskCategorie').val(normalizedTask.categorieLabel || '');
+            $('#taskPriorite').val(normalizedTask.prioriteLabel || '');
+
+            $('#statutGroup').show();
+            $('#taskStatut').val(normalizedTask.statutLabel || 'AFaire');
+
+            $('#duplicateTitleError').hide();
+            $('#titleAvailability').html('<span class="title-available"><i class="fas fa-check-circle"></i> Titre actuel</span>');
+            $('#saveTask').prop('disabled', false);
+            isTitleAvailable = true;
+
+            $('#modalTask').addClass('show');
+
+            setTimeout(() => $('#taskTitre').focus(), 100);
+        } catch (error) {
+            showToast('Erreur de chargement de la tâche', 'error');
+        }
+    }
+
+    async function saveTask() {
+        const titre = $('#taskTitre').val().trim();
+        if (!titre) {
+            showToast('Le titre est obligatoire', 'error');
+            return;
+        }
+
+        if (!isTitleAvailable) {
+            showToast('Veuillez choisir un titre unique', 'error');
+            return;
+        }
+
+        // Préparer les données pour l'API
+        const taskData = {
+            titre,
+            description: $('#taskDescription').val().trim() || null,
+            deadline: $('#taskDeadline').val() ? new Date($('#taskDeadline').val()).toISOString() : null
+        };
+
+        // Ajouter la catégorie si spécifiée
+        const categorie = $('#taskCategorie').val();
+        if (categorie) {
+            taskData.categorieUri = getUriFromLabel(categorie, 'categorie');
+        }
+
+        // Ajouter la priorité si spécifiée
+        const priorite = $('#taskPriorite').val();
+        if (priorite) {
+            taskData.prioriteUri = getUriFromLabel(priorite, 'priorite');
+        }
+
+        if (editingTaskId && $('#statutGroup').is(':visible')) {
+            const newStatut = $('#taskStatut').val() || 'AFaire';
+            taskData.statutUri = getUriFromLabel(newStatut, 'statut');
+            taskData.estTerminee = newStatut === 'Terminee';
+            saveStatus(editingTaskId, newStatut);
+        }
+
+        try {
+            const url = editingTaskId ? `${API_URL}/${editingTaskId}` : API_URL;
+            const method = editingTaskId ? 'PUT' : 'POST';
+
+            console.log('Envoi des données à l\'API:', taskData);
+
+            const response = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(taskData)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+
+                if (errorData.error === "Titre dupliqué") {
+                    $('#duplicateErrorMessage').text(errorData.message || 'Une tâche avec ce titre existe déjà.');
+                    $('#duplicateTitleError').show();
+
+                    $('#titleAvailability').html(`
+                        <span class="title-unavailable">
+                            <i class="fas fa-times-circle"></i> ${errorData.message || 'Ce titre est déjà utilisé'}
+                        </span>
+                    `);
+                    $('#saveTask').prop('disabled', true);
+                    isTitleAvailable = false;
+
+                    $('#duplicateTitleError').css('animation', 'none');
+                    setTimeout(() => {
+                        $('#duplicateTitleError').css('animation', 'shake 0.5s ease-in-out');
+                    }, 10);
+
+                    return;
+                }
+
+                throw new Error(errorData.message || 'Erreur de sauvegarde');
+            }
+
+            showToast(editingTaskId ? 'Tâche modifiée' : 'Tâche créée', 'success');
+            $('#modalTask').removeClass('show');
+            loadTasks();
+        } catch (error) {
+            if (error.message.includes('Titre dupliqué')) {
+                showToast('Ce titre est déjà utilisé par une autre tâche', 'error');
+            } else {
+                showToast(error.message || 'Erreur de sauvegarde', 'error');
+            }
+        }
+    }
+
+    async function toggleComplete(taskId, shouldComplete) {
+    try {
+        // Vérifier si c'est une sous-tâche
+        const taskResponse = await fetch(`${API_URL}/${taskId}`);
+        if (!taskResponse.ok) throw new Error('Tâche non trouvée');
+        const currentTask = await taskResponse.json();
+
+        const isSubtask = currentTask.sousTachesUris && currentTask.sousTachesUris.length > 0 ?
+            false : // Si elle a des sous-tâches, c'est un parent
+            tasks.some(t => {
+                const parentSubtasks = subtasksMap[extractId(t.id)] || [];
+                return parentSubtasks.some(st => extractId(st.id) === taskId);
+            });
+
+        const endpoint = shouldComplete ? 'complete' : 'in-progress';
+        const response = await fetch(`${API_URL}/${taskId}/${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Erreur');
+        }
+
+        const newStatut = shouldComplete ? 'Terminee' : 'AFaire';
+        saveStatus(taskId, newStatut);
+
+        const updatedTask = await response.json();
+        const normalizedTask = normalizeTaskData(updatedTask);
+
+        // Mettre à jour la tâche dans la liste
+        const taskIndex = tasks.findIndex(t => extractId(t.id) === taskId);
+        if (taskIndex !== -1) {
+            tasks[taskIndex] = {
+                ...tasks[taskIndex],
+                statutLabel: newStatut,
+                estTerminee: shouldComplete
+            };
+        }
+
+        // Mettre à jour visuellement immédiatement
+        updateTaskVisual(taskId, newStatut, shouldComplete);
+
+        // Règles hiérarchiques
+        const subtasks = subtasksMap[taskId] || [];
+
+        if (shouldComplete) {
+            // Règle 1 : Si la tâche parente est terminée, toutes ses sous-tâches aussi
+            if (!isSubtask && subtasks.length > 0) {
+                subtasks.forEach(subtask => {
+                    const subtaskId = extractId(subtask.id);
+                    updateTaskVisual(subtaskId, 'Terminee', true);
+                    saveStatus(subtaskId, 'Terminee');
+                });
+
+                showToast('Tâche et sous-tâches terminées', 'success');
+            } else if (isSubtask) {
+                showToast('Sous-tâche terminée', 'success');
+                // NOUVELLE RÈGLE IMPORTANTE : Si c'est une sous-tâche qui vient d'être terminée,
+                // vérifier si toutes les sous-tâches du parent sont maintenant terminées
+                await checkAndCompleteParentIfAllSubtasksDone(taskId);
+            } else {
+                showToast('Tâche terminée', 'success');
+            }
+        } else {
+            // Règle 2 : Si une SOUS-TÂCHE est remise en cours
+            if (isSubtask) {
+                // Trouver le parent de cette sous-tâche
+                for (const parentId in subtasksMap) {
+                    const parentSubtasks = subtasksMap[parentId] || [];
+                    if (parentSubtasks.some(st => extractId(st.id) === taskId)) {
+                        // Vérifier si le parent est terminé
+                        const parentTask = tasks.find(t => extractId(t.id) === parentId);
+                        if (parentTask && (parentTask.estTerminee || parentTask.statutLabel === 'Terminee')) {
+                            // Remettre SEULEMENT le parent en cours (sans affecter les autres sous-tâches)
+                            await fetch(`${API_URL}/${parentId}/in-progress`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' }
+                            });
+
+                            // Mettre à jour visuellement le parent SEULEMENT
+                            updateTaskVisual(parentId, 'AFaire', false);
+                            saveStatus(parentId, 'AFaire');
+
+                            // Mettre à jour la tâche dans la liste
+                            const parentIndex = tasks.findIndex(t => extractId(t.id) === parentId);
+                            if (parentIndex !== -1) {
+                                tasks[parentIndex] = {
+                                    ...tasks[parentIndex],
+                                    statutLabel: 'AFaire',
+                                    estTerminee: false
+                                };
+                            }
+
+                            // NE PAS REMETTRE LES AUTRES SOUS-TÂCHES EN COURS
+                            // Elles restent terminées jusqu'à ce que l'utilisateur les modifie manuellement
+
+                            showToast('Sous-tâche remise en cours, la tâche parente est également remise en cours', 'success');
+                        } else {
+                            showToast('Sous-tâche remise en cours', 'success');
+                        }
+                        break;
+                    }
+                }
+            }
+            // Règle 3 : Si une TÂCHE PARENTE est remise en cours
+            else if (subtasks.length > 0) {
+                // Demander confirmation pour remettre toutes les sous-tâches en cours
+                showConfirmationModal({
+                    title: 'Remettre la tâche en cours ?',
+                    message: 'Cette tâche a des sous-tâches terminées. Voulez-vous remettre toutes les sous-tâches à "À faire" ?',
+                    type: 'warning',
+                    details: `
+                        <div class="confirmation-details">
+                            <h4><i class="fas fa-info-circle"></i> Options disponibles :</h4>
+                            <ul>
+                                <li><strong>Oui</strong> : Toutes les sous-tâches seront remises à "À faire"</li>
+                                <li><strong>Non</strong> : Seule la tâche parente sera remise en cours</li>
+                            </ul>
+                        </div>
+                    `,
+                    confirmText: 'Oui, tout remettre',
+                    cancelText: 'Non, seulement le parent',
+                    onConfirm: async () => {
+                        // Option 1 : Remettre toutes les sous-tâches en cours
+                        subtasks.forEach(subtask => {
+                            const subtaskId = extractId(subtask.id);
+                            updateTaskVisual(subtaskId, 'AFaire', false);
+                            saveStatus(subtaskId, 'AFaire');
+                        });
+
+                        // Appeler l'API pour toutes les sous-tâches
+                        await Promise.all(subtasks.map(async (subtask) => {
+                            const subtaskId = extractId(subtask.id);
+                            try {
+                                await fetch(`${API_URL}/${subtaskId}/in-progress`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' }
+                                });
+                            } catch (err) {
+                                console.error(`Erreur sous-tâche ${subtaskId}:`, err);
+                            }
+                        }));
+
+                        showToast('Tâche et toutes les sous-tâches remises en cours', 'success');
+                        setTimeout(() => loadTasks(), 500);
+                    },
+                    onCancel: () => {
+                        // Option 2 : Remettre seulement le parent en cours
+                        showToast('Seule la tâche parente a été remise en cours', 'success');
+                        setTimeout(() => loadTasks(), 500);
+                    },
+                    data: { taskId }
+                });
+            } else {
+                showToast('Tâche remise en cours', 'success');
+            }
+        }
+
+        updateStats();
+
+        // Recharger pour synchroniser avec le backend
+        setTimeout(() => {
+            loadTasks();
+        }, 500);
+
+    } catch (error) {
+        showToast(error.message || 'Erreur lors du changement de statut', 'error');
+    }
+}
+
+
+    async function deleteTask(taskId, hasSubtasks) {
+        try {
+            const url = hasSubtasks ? `${API_URL}/${taskId}/cascade` : `${API_URL}/${taskId}`;
+            const response = await fetch(url, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Erreur de suppression');
+            }
+
+            const statuses = loadSavedStatuses();
+            delete statuses[taskId];
+            localStorage.setItem(STATUS_STORAGE_KEY, JSON.stringify(statuses));
+
+            showToast(hasSubtasks ? 'Tâche et sous-tâches supprimées' : 'Tâche supprimée', 'success');
+            loadTasks();
+        } catch (error) {
+            showToast(error.message || 'Erreur de suppression', 'error');
+        }
+    }
+
+    // ==================== SOUS-TÂCHES ====================
+
+    async function addSubtask(taskId) {
+        try {
+            const response = await fetch(`${API_URL}/${taskId}`);
+            if (!response.ok) throw new Error('Tâche parente non trouvée');
+
+            const parentTask = await response.json();
+
+            if (parentTask.estTerminee || parentTask.statutLabel === 'Terminee') {
+                showToast('Impossible d\'ajouter une sous-tâche à une tâche parente déjà terminée', 'error');
+                return;
+            }
+
+            currentTaskForSubtask = taskId;
+            currentParentTask = parentTask;
+            $('#formSubtask')[0].reset();
+
+            $('#subtaskDuplicateError').hide();
+            $('#subtaskTitleAvailability').html('');
+            $('#saveSubtask').prop('disabled', true);
+            isSubtaskTitleAvailable = false;
+
+            let warningHtml = '';
+            if (parentTask.deadline) {
+                const deadlineDate = new Date(parentTask.deadline).toLocaleString('fr-FR');
+                warningHtml = `
+                    <div class="warning-message">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            • Si vous ne spécifiez pas de deadline, celle du parent (${deadlineDate}) sera utilisée
+                        </div>
+                    </div>
+                `;
+            }
+            $('#subtaskWarning').html(warningHtml);
+
+            if (parentTask.dateCreation) {
+                const minDate = new Date(parentTask.dateCreation).toISOString().slice(0, 16);
+                $('#subtaskDeadline').attr('min', minDate);
+            }
+            if (parentTask.deadline) {
+                const maxDate = new Date(parentTask.deadline).toISOString().slice(0, 16);
+                $('#subtaskDeadline').attr('max', maxDate);
+            }
+
+            $('#modalSubtask').addClass('show');
+
+            setTimeout(() => $('#subtaskTitre').focus(), 100);
+        } catch (error) {
+            showToast('Erreur lors de la récupération de la tâche', 'error');
+        }
+    }
+
+    async function saveSubtask() {
+        const titre = $('#subtaskTitre').val().trim();
+        if (!titre) {
+            showToast('Le titre est obligatoire', 'error');
+            return;
+        }
+
+        if (!isSubtaskTitleAvailable) {
+            showToast('Veuillez choisir un titre unique', 'error');
+            return;
+        }
+
+        const deadlineValue = $('#subtaskDeadline').val();
+
+        if (deadlineValue && currentParentTask) {
+            const subtaskDeadline = new Date(deadlineValue);
+
+            if (currentParentTask.dateCreation) {
+                const parentCreation = new Date(currentParentTask.dateCreation);
+                if (subtaskDeadline < parentCreation) {
+                    showToast('La deadline doit être après la création de la tâche parent', 'error');
+                    return;
+                }
+            }
+
+            if (currentParentTask.deadline) {
+                const parentDeadline = new Date(currentParentTask.deadline);
+                if (subtaskDeadline > parentDeadline) {
+                    showToast('La deadline doit être avant celle de la tâche parent', 'error');
+                    return;
+                }
+            }
+        }
+
+        const subtaskData = {
+            titre,
+            description: $('#subtaskDescription').val().trim() || null,
+            deadline: deadlineValue || null
+        };
+
+        try {
+            const response = await fetch(`${API_URL}/${currentTaskForSubtask}/subtasks`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(subtaskData)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+
+                if (errorData.error === "Titre dupliqué") {
+                    $('#subtaskDuplicateMessage').text(errorData.message || 'Une tâche avec ce titre existe déjà.');
+                    $('#subtaskDuplicateError').show();
+
+                    $('#subtaskTitleAvailability').html(`
+                        <span class="title-unavailable">
+                            <i class="fas fa-times-circle"></i> ${errorData.message || 'Ce titre est déjà utilisé'}
+                        </span>
+                    `);
+                    $('#saveSubtask').prop('disabled', true);
+                    isSubtaskTitleAvailable = false;
+
+                    $('#subtaskDuplicateError').css('animation', 'none');
+                    setTimeout(() => {
+                        $('#subtaskDuplicateError').css('animation', 'shake 0.5s ease-in-out');
+                    }, 10);
+
+                    showToast('Ce titre est déjà utilisé par une autre tâche', 'error');
+                    return;
+                }
+
+                showToast(errorData.message || 'Erreur lors de l\'ajout', 'error');
+                return;
+            }
+
+            showToast('Sous-tâche ajoutée', 'success');
+            $('#modalSubtask').removeClass('show');
+            loadTasks();
+        } catch (error) {
+            if (error.message.includes('Titre dupliqué')) {
+                showToast('Ce titre est déjà utilisé par une autre tâche', 'error');
+            } else {
+                showToast('Erreur réseau', 'error');
+            }
+        }
+    }
+
+    // ==================== UTILITAIRES ====================
+
+    function showToast(message, type = 'success') {
+        const toast = $('#toast');
+        const icon = toast.find('.toast-icon');
+
+        toast.removeClass('success error');
+        toast.addClass(type);
+
+        icon.removeClass('fa-check-circle fa-exclamation-circle');
+        icon.addClass(type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle');
+
+        $('#toastMessage').text(message);
+        toast.addClass('show');
+
+        setTimeout(() => {
+            toast.removeClass('show');
+        }, 3000);
+    }
+</script>
+
+</body>
+</html>

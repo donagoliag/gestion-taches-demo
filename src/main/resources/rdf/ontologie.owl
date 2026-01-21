@@ -1,0 +1,212 @@
+@prefix : <http://www.example.org/ontologie/gestion-taches> .
+@prefix tm: <http://www.example.org/ontologie/gestion-taches#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@base <http://www.example.org/ontologie/gestion-taches> .
+
+<http://www.example.org/ontologie/gestion-taches> rdf:type owl:Ontology .
+
+#################################################################
+#    NOUVELLES Propriétés (AJOUTS)
+#################################################################
+
+###  http://www.example.org/ontologie/gestion-taches#aSousTache
+tm:aSousTache rdf:type owl:ObjectProperty ;
+              rdfs:domain tm:Tache ;
+              rdfs:range tm:Tache ;
+              rdfs:comment "Relation hiérarchique entre tâches : une tâche peut avoir des sous-tâches"@fr .
+
+###  http://www.example.org/ontologie/gestion-taches#dependDe
+tm:dependDe rdf:type owl:ObjectProperty ;
+            rdfs:domain tm:Tache ;
+            rdfs:range tm:Tache ;
+            rdfs:comment "Dépendance entre tâches : B dépend de A"@fr .
+
+###  http://www.example.org/ontologie/gestion-taches#terminationCause
+tm:terminationCause rdf:type owl:DatatypeProperty ;
+                    rdfs:domain tm:Tache ;
+                    rdfs:range xsd:string ;
+                    rdfs:comment "Cause de la terminaison (Manual, ParentCompleted, AllSubtasksCompleted)"@fr .
+
+###  http://www.example.org/ontologie/gestion-taches#dateFin
+tm:dateFin rdf:type owl:DatatypeProperty ;
+           rdfs:domain tm:Tache ;
+           rdfs:range xsd:dateTime ;
+           rdfs:comment "Date de fin effective de la tâche"@fr .
+
+###  http://www.example.org/ontologie/gestion-taches#warning
+tm:warning rdf:type owl:DatatypeProperty ;
+           rdfs:domain tm:Tache ;
+           rdfs:range xsd:string ;
+           rdfs:comment "Avertissement sur la tâche"@fr .
+
+###  http://www.example.org/ontologie/gestion-taches#urgence
+tm:urgence rdf:type owl:DatatypeProperty ;
+           rdfs:domain tm:Tache ;
+           rdfs:range xsd:string ;
+           rdfs:comment "Niveau d'urgence (faible, moyen, élevé)"@fr .
+
+#################################################################
+#    Object Properties (EXISTANTES)
+#################################################################
+
+###  http://www.example.org/ontologie/gestion-taches#aPriorite
+tm:aPriorite rdf:type owl:ObjectProperty ,
+                      owl:FunctionalProperty ;
+             rdfs:domain tm:Tache ;
+             rdfs:range tm:Priorite .
+
+###  http://www.example.org/ontologie/gestion-taches#aStatut
+tm:aStatut rdf:type owl:ObjectProperty ,
+                    owl:FunctionalProperty ;
+           rdfs:domain tm:Tache ;
+           rdfs:range tm:StatutTache .
+
+###  http://www.example.org/ontologie/gestion-taches#appartientA
+tm:appartientA rdf:type owl:ObjectProperty ,
+                        owl:FunctionalProperty ;
+               rdfs:domain tm:Tache ;
+               rdfs:range tm:Categorie .
+
+###  http://www.example.org/ontologie/gestion-taches#assigneA
+tm:assigneA rdf:type owl:ObjectProperty ,
+                     owl:FunctionalProperty ;
+            rdfs:domain tm:Tache ;
+            rdfs:range tm:Utilisateur .
+
+###  http://www.example.org/ontologie/gestion-taches#creePar
+tm:creePar rdf:type owl:ObjectProperty ;
+           rdfs:domain tm:Tache ;
+           rdfs:range tm:Utilisateur .
+
+#################################################################
+#    Data properties (EXISTANTES)
+#################################################################
+
+###  http://www.example.org/ontologie/gestion-taches#couleur
+tm:couleur rdf:type owl:DatatypeProperty ;
+           rdfs:domain tm:Categorie ;
+           rdfs:range xsd:string .
+
+###  http://www.example.org/ontologie/gestion-taches#dateCreation
+tm:dateCreation rdf:type owl:DatatypeProperty ;
+                rdfs:domain tm:Tache ;
+                rdfs:range xsd:dateTime .
+
+###  http://www.example.org/ontologie/gestion-taches#deadline
+tm:deadline rdf:type owl:DatatypeProperty ;
+            rdfs:domain tm:Tache ;
+            rdfs:range xsd:dateTime .
+
+###  http://www.example.org/ontologie/gestion-taches#description
+tm:description rdf:type owl:DatatypeProperty ;
+               rdfs:domain tm:Tache ;
+               rdfs:range xsd:string .
+
+###  http://www.example.org/ontologie/gestion-taches#email
+tm:email rdf:type owl:DatatypeProperty ;
+         rdfs:domain tm:Utilisateur ;
+         rdfs:range xsd:string .
+
+###  http://www.example.org/ontologie/gestion-taches#estTerminee
+tm:estTerminee rdf:type owl:DatatypeProperty ;
+               rdfs:domain tm:Tache ;
+               rdfs:range xsd:boolean .
+
+###  http://www.example.org/ontologie/gestion-taches#niveau
+tm:niveau rdf:type owl:DatatypeProperty ;
+          rdfs:domain tm:Priorite ;
+          rdfs:range xsd:string .
+
+###  http://www.example.org/ontologie/gestion-taches#nomCategorie
+tm:nomCategorie rdf:type owl:DatatypeProperty ;
+                rdfs:domain tm:Categorie ;
+                rdfs:range xsd:string .
+
+###  http://www.example.org/ontologie/gestion-taches#nomUtilisateur
+tm:nomUtilisateur rdf:type owl:DatatypeProperty ;
+                  rdfs:domain tm:Utilisateur ;
+                  rdfs:range xsd:string .
+
+###  http://www.example.org/ontologie/gestion-taches#titre
+tm:titre rdf:type owl:DatatypeProperty ;
+         rdfs:domain tm:Tache ;
+         rdfs:range xsd:string .
+
+###  http://www.example.org/ontologie/gestion-taches#valeur
+tm:valeur rdf:type owl:DatatypeProperty ;
+          rdfs:domain tm:Priorite ;
+          rdfs:range xsd:integer .
+
+#################################################################
+#    Classes (EXISTANTES)
+#################################################################
+
+###  http://www.example.org/ontologie/gestion-taches#Categorie
+tm:Categorie rdf:type owl:Class .
+
+###  http://www.example.org/ontologie/gestion-taches#Priorite
+tm:Priorite rdf:type owl:Class .
+
+###  http://www.example.org/ontologie/gestion-taches#StatutTache
+tm:StatutTache rdf:type owl:Class .
+
+###  http://www.example.org/ontologie/gestion-taches#Tache
+tm:Tache rdf:type owl:Class .
+
+###  http://www.example.org/ontologie/gestion-taches#Utilisateur
+tm:Utilisateur rdf:type owl:Class .
+
+#################################################################
+#    Individuals (EXISTANTES)
+#################################################################
+
+###  http://www.example.org/ontologie/gestion-taches#AFaire
+tm:AFaire rdf:type owl:NamedIndividual ,
+                   tm:StatutTache .
+
+###  http://www.example.org/ontologie/gestion-taches#Basse
+tm:Basse rdf:type owl:NamedIndividual ,
+                  tm:Priorite .
+
+###  http://www.example.org/ontologie/gestion-taches#EnCours
+tm:EnCours rdf:type owl:NamedIndividual ,
+                    tm:StatutTache .
+
+###  http://www.example.org/ontologie/gestion-taches#EnRetard
+tm:EnRetard rdf:type owl:NamedIndividual ,
+                     tm:StatutTache .
+
+###  http://www.example.org/ontologie/gestion-taches#Etudes
+tm:Etudes rdf:type owl:NamedIndividual ,
+                   tm:Categorie .
+
+###  http://www.example.org/ontologie/gestion-taches#Haute
+tm:Haute rdf:type owl:NamedIndividual ,
+                  tm:Priorite .
+
+###  http://www.example.org/ontologie/gestion-taches#Loisirs
+tm:Loisirs rdf:type owl:NamedIndividual ,
+                    tm:Categorie .
+
+###  http://www.example.org/ontologie/gestion-taches#Moyenne
+tm:Moyenne rdf:type owl:NamedIndividual ,
+                    tm:Priorite .
+
+###  http://www.example.org/ontologie/gestion-taches#Personnel
+tm:Personnel rdf:type owl:NamedIndividual ,
+                      tm:Categorie .
+
+###  http://www.example.org/ontologie/gestion-taches#Terminee
+tm:Terminee rdf:type owl:NamedIndividual ,
+                     tm:StatutTache .
+
+###  http://www.example.org/ontologie/gestion-taches#Travail
+tm:Travail rdf:type owl:NamedIndividual ,
+                    tm:Categorie .
+
+###  http://www.example.org/ontologie/gestion-taches#Urgente
+tm:Urgente rdf:type owl:NamedIndividual ,
+                    tm:Priorite .
