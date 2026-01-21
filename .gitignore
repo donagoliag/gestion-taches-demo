@@ -52,3 +52,8 @@ logs/
 # Temporaires
 tmp/
 temp/
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
