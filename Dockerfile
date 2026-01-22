@@ -1,12 +1,11 @@
-# Dockerfile simplifié - Build local, déploiement simple
-FROM openjdk:17-alpine
+FROM maven:3.9.6-eclipse-temurin-17 AS builder
 WORKDIR /app
+COPY pom.xml .
+COPY src ./src
+RUN mvn clean package -DskipTests
 
-# Copie le JAR que tu as build localement
-COPY target/gestiontaches-0.0.1-SNAPSHOT.jar app.jar
-
-# Exposition du port
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+COPY --from=builder /app/target/*.jar app.jar
 EXPOSE 8080
-
-# Commande de démarrage
 CMD ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
