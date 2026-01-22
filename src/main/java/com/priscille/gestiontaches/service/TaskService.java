@@ -817,11 +817,12 @@ public class TaskService {
     }
 
     private void saveData() {
-        try (FileOutputStream out = new FileOutputStream("data/data.ttl")) {
-            RDFDataMgr.write(out, model, org.apache.jena.riot.RDFFormat.TURTLE_PRETTY);
-        } catch (IOException e) {
-            throw new RuntimeException("Erreur lors de la sauvegarde RDF", e);
-        }
+        // MODE DÉMO RENDER : Pas de sauvegarde sur disque
+        // Log uniquement pour le debug
+        System.out.println("✅ [RENDER DEMO] Données mises à jour en mémoire");
+
+        // EN DÉMO : Ne pas écrire sur disque (Render bloque l'écriture)
+        // Les données restent en mémoire uniquement
     }
 
     private boolean filterMatch(Task t, Map<String,String> filters) {
